@@ -12,7 +12,6 @@
 #define RED_LED 33
 #define GREEN_LED 25
 
-
 //Parameters
 const char* ssid = "MORDOR";
 const char* password = "Sauron99";
@@ -98,6 +97,21 @@ void setup() {
   //init LED
   pinMode(RED_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
+  
+  // Set pin modes
+  pinMode(GREEN_LED, INPUT);
+  pinMode(RED_LED, INPUT);
+  
+    // Check if green LED is on
+    if (digitalRead(GREEN_LED) == HIGH) {
+  
+      delay(2000); // add delay between lights
+  }
+  
+    if (digitalRead(redLedPin) == HIGH) {
+    
+      delay(2000); // add delay between lights
+  }
 
   initRfid();
 
