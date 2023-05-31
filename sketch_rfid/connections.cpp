@@ -9,7 +9,7 @@ String serverName = "https://eapc1h7s93.execute-api.eu-west-2.amazonaws.com/Stag
 
 // See https://thingsboard.io/docs/getting-started-guides/helloworld/
 // to understand how to obtain an access token
-constexpr char TOKEN[] = "rp9o39zfoaf2juk1mdv1";
+constexpr char TOKEN[] = "f4dycql0qmdbdr007fpm";
 
 // Thingsboard we want to establish a connection too
 constexpr char THINGSBOARD_SERVER[] = "192.168.132.111";
@@ -119,7 +119,7 @@ void processSharedAttributes(const Shared_Attribute_Data &data) {
       }
     } else if(strcmp(it->key().c_str(), LED_STATE_ATTR) == 0) {
       ledState = it->value().as<bool>();
-      digitalWrite(LED_BUILTIN, ledState ? HIGH : LOW);
+      digitalWrite(GREEN_LED, ledState ? HIGH : LOW);
       Serial.print("Updated state to: ");
       Serial.println(ledState);
     }
@@ -202,10 +202,10 @@ void connectToThingsBoard(){
   if (ledMode == 1 && millis() - previousStateChange > blinkingInterval) {
     previousStateChange = millis();
     ledState = !ledState;
-    digitalWrite(LED_BUILTIN, ledState);
+    digitalWrite(GREEN_LED, ledState);
     tb.sendTelemetryBool(LED_STATE_ATTR, ledState);
     tb.sendAttributeBool(LED_STATE_ATTR, ledState);
-    if (LED_BUILTIN == 99) {
+    if (GREEN_LED == 25) {
       Serial.print("LED state changed to: ");
       Serial.println(ledState);
     }
@@ -254,7 +254,7 @@ void sendToAws(String id){
 
     Serial.println(httpRequestData);
 
-
+  /*
     if(httpResponseCode != 200){
       digitalWrite(RED_LED, HIGH);
       digitalWrite(GREEN_LED, LOW);
@@ -262,7 +262,8 @@ void sendToAws(String id){
       digitalWrite(GREEN_LED, HIGH);
       digitalWrite(RED_LED, LOW);    
     } 
-    
+    */
+
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);
 

@@ -3,7 +3,6 @@
 #include "rfid.h";
 
 #define RED_LED 33
-#define GREEN_LED 25
 
 
 void setup() {
