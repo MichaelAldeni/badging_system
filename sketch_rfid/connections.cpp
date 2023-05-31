@@ -4,7 +4,11 @@
 const char* ssid = "MORDOR";
 const char* password = "Sauron99";
 //Your Domain name with URL path or IP address with path
-String serverName = "https://eapc1h7s93.execute-api.eu-west-2.amazonaws.com/Stage/verify";
+String serverName = "https://4nsuna0nia.execute-api.eu-west-2.amazonaws.com/Prod";
+
+bool is_new_tag = false;
+
+const String DEVICE_ID = "123";
 
 
 // See https://thingsboard.io/docs/getting-started-guides/helloworld/
@@ -240,12 +244,14 @@ void initWiFi(){
 
 void sendToAws(String id){
     // Data to send with HTTP POST
-    String httpRequestData = "{\"rfid_id\":\"" + id + "\"}";
+    String httpRequestData = "{\"rfid_id\":\"" + id + "\", \"device_id\":\"" + DEVICE_ID + "\"}";
     //String httpRequestData = "{\"rfid_id\": \"lkj\"}";
+
+    String endpoint = is_new_tag ? "/register" : "/verify"; 
 
     WiFiClient client;
     HTTPClient http;
-    http.begin(serverName);
+    http.begin(serverName + endpoint);
     // Specify content-type header
     http.addHeader("Content-Type", "application/json");
 
