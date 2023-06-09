@@ -13,10 +13,10 @@ const String DEVICE_ID = "123";
 
 // See https://thingsboard.io/docs/getting-started-guides/helloworld/
 // to understand how to obtain an access token
-constexpr char TOKEN[] = "f4dycql0qmdbdr007fpm";
+constexpr char TOKEN[] = "bqpcw9gvjqtvne59gxx9";
 
 // Thingsboard we want to establish a connection too
-constexpr char THINGSBOARD_SERVER[] = "192.168.132.111";
+constexpr char THINGSBOARD_SERVER[] = "192.168.135.88";
 // MQTT port used to communicate with the server, 1883 is the default unencrypted MQTT port.
 constexpr uint16_t THINGSBOARD_PORT = 1883U;
 
@@ -32,12 +32,15 @@ constexpr uint32_t SERIAL_DEBUG_BAUD = 115200U;
 WiFiClient wifiClient;
 // Initialize ThingsBoard instance with the maximum needed buffer size
 ThingsBoard tb(wifiClient, MAX_MESSAGE_SIZE);
+// Initializa LCD instance
+LiquidCrystal_I2C lcd(0x27,16,2);
 
 // Attribute names for attribute request and attribute updates functionality
 
 constexpr char BLINKING_INTERVAL_ATTR[] = "blinkingInterval";
 constexpr char LED_MODE_ATTR[] = "ledMode";
 constexpr char LED_STATE_ATTR[] = "ledState";
+constexpr char PHOTORESISTOR[] = "Photoresistor";
 
 // Statuses for subscribing to rpc
 bool subscribed = false;
@@ -65,7 +68,8 @@ uint32_t previousDataSend;
 // List of shared attributes for subscribing to their updates
 constexpr std::array<const char *, 2U> SHARED_ATTRIBUTES_LIST = {
   LED_STATE_ATTR,
-  BLINKING_INTERVAL_ATTR
+  BLINKING_INTERVAL_ATTR,
+  //PHOTORESISTOR
 };
 
 // List of client attributes for requesting them (Using to initialize device states)
@@ -85,6 +89,21 @@ RPC_Response processSetLedMode(const RPC_Data &data) {
   // Process data
   int new_mode = data;
 
+  is_new_tag = !is_new_tag;
+  if(is_new_tag)
+  {
+    lcd.clear();
+    lcd.setCursor(6,0);
+    lcd.print("Card");
+    lcd.setCursor(2,1);
+    lcd.print("registration"); 
+  }
+  else
+  {
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Ready to bedge!!");
+  }
   Serial.print("Mode to change: ");
   Serial.println(new_mode);
 
@@ -144,6 +163,36 @@ const Shared_Attribute_Callback attributes_callback(SHARED_ATTRIBUTES_LIST.cbegi
 const Attribute_Request_Callback attribute_shared_request_callback(SHARED_ATTRIBUTES_LIST.cbegin(), SHARED_ATTRIBUTES_LIST.cend(), &processSharedAttributes);
 const Attribute_Request_Callback attribute_client_request_callback(CLIENT_ATTRIBUTES_LIST.cbegin(), CLIENT_ATTRIBUTES_LIST.cend(), &processClientAttributes);
 
+void Photoresistor(String &_telemetryPayload)
+{
+  int adcVal = analogRead(PIN_ANALOG_IN); //read adc
+  int pwmVal = map(constrain(adcVal, LIGHT_MIN, LIGHT_MAX), LIGHT_MIN, LIGHT_MAX, 0, 4095);
+  _telemetryPayload = "{\"luminosity\": " + String(adcVal) + "}";
+// adcVal re-map to pwmVal
+  ledcWrite(CHAN, pwmVal); // set the pulse width.
+  delay(10);
+}
+
+bool i2CAddrTest(uint8_t addr) {
+ Wire.begin();
+ Wire.beginTransmission(addr);
+ if (Wire.endTransmission() == 0) {
+ return true;
+ }
+ return false;
+}
+
+void initLCD()
+{
+  Wire.begin(SDA, SCL); // attach the IIC pin
+ if (!i2CAddrTest(0x27)) 
+    lcd = LiquidCrystal_I2C(0x3F, 16, 2);
+ 
+ lcd.init(); // LCD driver initialization
+ lcd.backlight(); // Open the backlight
+ lcd.setCursor(0,0); // Move the cursor to row 0, column 0
+ lcd.print("Ready to bedge!!"); // The print content is displayed on the LCD
+}
 
 void connectToThingsBoard(){
   if (!tb.connected()) {
@@ -218,12 +267,13 @@ void connectToThingsBoard(){
   // Sending telemetry every telemetrySendInterval time
   if (millis() - previousDataSend > telemetrySendInterval) {
     previousDataSend = millis();
-    tb.sendTelemetryInt("temperature", random(10, 20));
+    
     tb.sendAttributeInt("rssi", WiFi.RSSI());
     tb.sendAttributeInt("channel", WiFi.channel());
     tb.sendAttributeString("bssid", WiFi.BSSIDstr().c_str());
     tb.sendAttributeString("localIp", WiFi.localIP().toString().c_str());
     tb.sendAttributeString("ssid", WiFi.SSID().c_str());
+    //tb.sendTelemetryString("photoresistor",(const char)_telemetryPayload[]);
   }
 
   tb.loop();
@@ -260,15 +310,63 @@ void sendToAws(String id){
 
     Serial.println(httpRequestData);
 
-  /*
-    if(httpResponseCode != 200){
-      digitalWrite(RED_LED, HIGH);
-      digitalWrite(GREEN_LED, LOW);
+  if(!is_new_tag)
+  {
+    if(httpResponseCode != 200)
+    {
+      lcd.clear();
+      lcd.setCursor(5,0);
+      lcd.print("Access");
+      lcd.setCursor(5,1);
+      lcd.print("denied");
+      delay(5000);
+      lcd.clear();
+      lcd.setCursor(0,0); // Move the cursor to row 0, column 0
+      lcd.print("Ready to bedge!!");
     }else{
-      digitalWrite(GREEN_LED, HIGH);
-      digitalWrite(RED_LED, LOW);    
+      lcd.clear();
+      lcd.setCursor(3,0);
+      lcd.print("Authorized");
+      lcd.setCursor(5,1);
+      lcd.print("access");   
+      delay(5000);
+      lcd.clear();
+      lcd.setCursor(0,0); // Move the cursor to row 0, column 0
+      lcd.print("Ready to bedge!!");
     } 
-    */
+  }
+  else
+  {
+    if(httpResponseCode == 200 )
+    {
+      lcd.clear();
+      lcd.setCursor(2,0);
+      lcd.print("Registration");
+      lcd.setCursor(3,1);
+      lcd.print("completed");   
+      delay(5000);
+      lcd.clear();
+      lcd.setCursor(6,0);
+      lcd.print("Card");
+      lcd.setCursor(2,1);
+      lcd.print("registration");
+    }   
+    else
+    {
+      lcd.clear();
+      lcd.setCursor(2,0);
+      lcd.print("Registration");
+      lcd.setCursor(5,1);
+      lcd.print("failed");   
+      delay(5000);
+      lcd.clear();
+      lcd.setCursor(6,0);
+      lcd.print("Card");
+      lcd.setCursor(2,1);
+      lcd.print("registration");
+    }
+  }
+ 
 
     Serial.print("HTTP Response code: ");
     Serial.println(httpResponseCode);

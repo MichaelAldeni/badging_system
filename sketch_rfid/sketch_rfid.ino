@@ -2,19 +2,20 @@
 #include "connections.h";
 #include "rfid.h";
 
-#define RED_LED 33
-
 
 void setup() {
  	//Init Serial USB
  	Serial.begin(115200);
 
   //init LED
-  pinMode(RED_LED, OUTPUT);
   pinMode(GREEN_LED, OUTPUT);
 
-  initRfid();
+  //init Photoresistor 
+  ledcSetup(CHAN, 1000, 12);
+  ledcAttachPin(PIN_LED, CHAN);
 
+  initRfid();
+  initLCD();
   initWiFi();
 }
 
@@ -22,6 +23,10 @@ void setup() {
 void loop() {
   //Check WiFi connection status
   if(WiFi.status()== WL_CONNECTED){
+
+   // String telemetryPayload = "";
+   // Photoresistor(telemetryPayload);
+    connectToThingsBoard();
 
     String id = "";
 
