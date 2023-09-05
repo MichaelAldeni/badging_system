@@ -1,5 +1,7 @@
 #include "connections.h";
 
+
+
 //Parameters
 const char* ssid = "MORDOR";
 const char* password = "Sauron99";
@@ -13,10 +15,10 @@ const String DEVICE_ID = "123";
 
 // See https://thingsboard.io/docs/getting-started-guides/helloworld/
 // to understand how to obtain an access token
-constexpr char TOKEN[] = "bqpcw9gvjqtvne59gxx9";
+const char* TOKEN = "bqpcw9gvjqtvne59gxx9"; 
 
 // Thingsboard we want to establish a connection too
-constexpr char THINGSBOARD_SERVER[] = "192.168.135.88";
+const char* THINGSBOARD_SERVER = "mqtt.thingsboard.cloud";
 // MQTT port used to communicate with the server, 1883 is the default unencrypted MQTT port.
 constexpr uint16_t THINGSBOARD_PORT = 1883U;
 
@@ -127,6 +129,8 @@ const std::array<RPC_Callback, 1U> callbacks = {
   RPC_Callback{ "setLedMode", processSetLedMode }
 };
 
+// for init camera
+//camera_config_t config;
 
 /// @brief Update callback that will be called as soon as one of the provided shared attributes changes value,
 /// if none are provided we subscribe to any shared attribute change instead
@@ -165,12 +169,26 @@ const Attribute_Request_Callback attribute_client_request_callback(CLIENT_ATTRIB
 
 void Photoresistor(String &_telemetryPayload)
 {
-  int adcVal = analogRead(PIN_ANALOG_IN); //read adc
-  int pwmVal = map(constrain(adcVal, LIGHT_MIN, LIGHT_MAX), LIGHT_MIN, LIGHT_MAX, 0, 4095);
+  int adcVal = analogRead(PIN_ANALOG_LUX); //read adc
+  //Serial.print(adcVal);
+  //int pwmVal = map(constrain(adcVal, LIGHT_MIN, LIGHT_MAX), LIGHT_MIN, LIGHT_MAX, 0, 4095);
   _telemetryPayload = "{\"luminosity\": " + String(adcVal) + "}";
-// adcVal re-map to pwmVal
-  ledcWrite(CHAN, pwmVal); // set the pulse width.
+  // adcVal re-map to pwmVal
+  //ledcWrite(CHAN, pwmVal); // set the pulse width.
   delay(10);
+}
+
+void Thermometer(String &_telemetryPayload)
+{
+  int adcValue = analogRead(PIN_ANALOG_TEMP);                         //read ADC pin
+  double voltage = (float)adcValue / 4095.0 * 3.3;                  //calculate voltage
+  double Rt = 10 * voltage / (3.3 - voltage);                       //calculate resistance value of thermistor
+  double tempK = 1 / (1/(273.15 + 25) + log(Rt / 10)/3950.0);      //calculate temperature (Kelvin)
+  double tempC = tempK - 273.15;                                   //calculate temperature (Celsius)
+  _telemetryPayload = "{\"temperature\": " + String(tempC) + "}";
+  Serial.printf("ADC value : %d,\tVoltage : %.2fV, \tTemperature : %.2fC\n", adcValue, voltage, tempC);
+  delay(1000);
+
 }
 
 bool i2CAddrTest(uint8_t addr) {
@@ -193,8 +211,82 @@ void initLCD()
  lcd.setCursor(0,0); // Move the cursor to row 0, column 0
  lcd.print("Ready to bedge!!"); // The print content is displayed on the LCD
 }
+/*
+void initCamera()
+{
+ config.ledc_channel = LEDC_CHANNEL_0;
+ config.ledc_timer = LEDC_TIMER_0;
+ config.pin_d0 = Y2_GPIO_NUM;
+ config.pin_d1 = Y3_GPIO_NUM;
+ config.pin_d2 = Y4_GPIO_NUM;
+ config.pin_d3 = Y5_GPIO_NUM;
+ config.pin_d4 = Y6_GPIO_NUM;
+ config.pin_d5 = Y7_GPIO_NUM;
+ config.pin_d6 = Y8_GPIO_NUM;
+ config.pin_d7 = Y9_GPIO_NUM;
+ config.pin_xclk = XCLK_GPIO_NUM;
+ config.pin_pclk = PCLK_GPIO_NUM;
+ config.pin_vsync = VSYNC_GPIO_NUM;
+ config.pin_href = HREF_GPIO_NUM;
+ config.pin_sscb_sda = SIOD_GPIO_NUM;
+ config.pin_sscb_scl = SIOC_GPIO_NUM;
+ config.pin_pwdn = PWDN_GPIO_NUM;
+ config.pin_reset = RESET_GPIO_NUM;
+ config.xclk_freq_hz = 20000000;
+ config.pixel_format = PIXFORMAT_JPEG;
+  if (psramFound()) {
+    config.frame_size = FRAMESIZE_UXGA;
+    config.jpeg_quality = 10;
+    config.fb_count = 2;
+  } else {
+    config.frame_size = FRAMESIZE_SVGA;
+    config.jpeg_quality = 12;
+    config.fb_count = 1;
+  }
+  esp_camera_init(&config);
+}
+// Function to encode binary data to base64
+String base64Encode(const uint8_t* data, size_t len) {
+  const char* base64Table = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+  String encoded = "";
+  int dataIndex = 0;
+  while (len > 0) {
+    int byte1 = data[dataIndex++];
+    int byte2 = len > 1 ? data[dataIndex++] : 0;
+    int byte3 = len > 2 ? data[dataIndex++] : 0;
 
-void connectToThingsBoard(){
+    int charIndex1 = byte1 >> 2;
+    int charIndex2 = ((byte1 & 3) << 4) | (byte2 >> 4);
+    int charIndex3 = ((byte2 & 15) << 2) | (byte3 >> 6);
+    int charIndex4 = byte3 & 63;
+
+    encoded += base64Table[charIndex1];
+    encoded += base64Table[charIndex2];
+    encoded += len > 1 ? base64Table[charIndex3] : '=';
+    encoded += len > 2 ? base64Table[charIndex4] : '=';
+
+    len -= 3;
+  }
+  return encoded;
+}
+
+
+void captureAndSendPhoto() {
+  camera_fb_t* fb = esp_camera_fb_get();
+  if (!fb) {
+    Serial.println("Failed to capture photo");
+    return;
+  }
+  String photoData = base64Encode(fb->buf, fb->len);
+  String _telemetryPayload = "{\camera\": " + photoData + "}";
+  tb.sendTelemetryJson(_telemetryPayload.c_str());
+
+  esp_camera_fb_return(fb);
+}
+*/
+
+
+void connectToThingsBoard(String &_telemetryPayload){
   if (!tb.connected()) {
     subscribed = false;
     // Connect to the ThingsBoard
@@ -274,6 +366,9 @@ void connectToThingsBoard(){
     tb.sendAttributeString("localIp", WiFi.localIP().toString().c_str());
     tb.sendAttributeString("ssid", WiFi.SSID().c_str());
     //tb.sendTelemetryString("photoresistor",(const char)_telemetryPayload[]);
+    //Serial.println(_telemetryPayload.c_str());
+    tb.sendTelemetryJson(_telemetryPayload.c_str());
+    
   }
 
   tb.loop();
@@ -293,6 +388,10 @@ void initWiFi(){
 }
 
 void sendToAws(String id){
+
+ // captureAndSendPhoto();
+ // return;
+
     // Data to send with HTTP POST
     String httpRequestData = "{\"rfid_id\":\"" + id + "\", \"device_id\":\"" + DEVICE_ID + "\"}";
     //String httpRequestData = "{\"rfid_id\": \"lkj\"}";
@@ -314,6 +413,7 @@ void sendToAws(String id){
   {
     if(httpResponseCode != 200)
     {
+  
       lcd.clear();
       lcd.setCursor(5,0);
       lcd.print("Access");

@@ -16,6 +16,7 @@ void setup() {
 
   initRfid();
   initLCD();
+  //initCamera();
   initWiFi();
 }
 
@@ -24,9 +25,10 @@ void loop() {
   //Check WiFi connection status
   if(WiFi.status()== WL_CONNECTED){
 
-   // String telemetryPayload = "";
-   // Photoresistor(telemetryPayload);
-    connectToThingsBoard();
+    String telemetryPayload = "";
+    //Photoresistor(telemetryPayload);
+    Thermometer(telemetryPayload);
+    connectToThingsBoard(telemetryPayload);
 
     String id = "";
 
