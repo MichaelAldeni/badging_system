@@ -25,10 +25,12 @@ void loop() {
   //Check WiFi connection status
   if(WiFi.status()== WL_CONNECTED){
 
-    String telemetryPayload = "";
-    //Photoresistor(telemetryPayload);
-    Thermometer(telemetryPayload);
-    connectToThingsBoard(telemetryPayload);
+    String telemetryPayloadT = "";
+    String telemetryPayloadP = "";
+
+    Photoresistor(telemetryPayloadP);
+    Thermometer(telemetryPayloadT);
+    connectToThingsBoard(telemetryPayloadT, telemetryPayloadP);
 
     String id = "";
 
