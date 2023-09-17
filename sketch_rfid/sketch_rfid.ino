@@ -10,13 +10,8 @@ void setup() {
   //init LED
   pinMode(GREEN_LED, OUTPUT);
 
-  //init Photoresistor 
-  ledcSetup(CHAN, 1000, 12);
-  ledcAttachPin(PIN_LED, CHAN);
-
   initRfid();
   initLCD();
-  //initCamera();
   initWiFi();
 }
 

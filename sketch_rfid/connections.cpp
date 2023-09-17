@@ -38,7 +38,7 @@ LiquidCrystal_I2C lcd(0x27,16,2);
 constexpr char BLINKING_INTERVAL_ATTR[] = "blinkingInterval";
 constexpr char LED_MODE_ATTR[] = "ledMode";
 constexpr char LED_STATE_ATTR[] = "ledState";
-constexpr char PHOTORESISTOR[] = "Photoresistor";
+//constexpr char PHOTORESISTOR[] = "Photoresistor";
 
 // Statuses for subscribing to rpc
 bool subscribed = false;
@@ -166,8 +166,8 @@ const Attribute_Request_Callback attribute_client_request_callback(CLIENT_ATTRIB
 void Photoresistor(String &_telemetryPayload)
 {
   int adcVal = analogRead(PIN_ANALOG_LUX); //read adc
-  int pwmVal = map(constrain(adcVal, LIGHT_MIN, LIGHT_MAX), LIGHT_MIN, LIGHT_MAX, 0, 4095);
-  _telemetryPayload = "{\"luminosity\": " + String(pwmVal) + "}";
+  //Serial.print(adcVal + " ");
+  _telemetryPayload = "{\"luminosity\": " + String(adcVal) + "}";
   delay(10);
 }
 
@@ -177,7 +177,8 @@ void Thermometer(String &_telemetryPayload)
   double voltage = (float)adcValue / 4095.0 * 3.3;                  //calculate voltage
   double Rt = 10 * voltage / (3.3 - voltage);                       //calculate resistance value of thermistor
   double tempK = 1 / (1/(273.15 + 25) + log(Rt / 10)/3950.0);      //calculate temperature (Kelvin)
-  double tempC = tempK - 273.15;                                   //calculate temperature (Celsius)
+  double tempC = tempK - 273.15;                                  //calculate temperature (Celsius)
+  //Serial.print(String(tempC) + " ");                             
   _telemetryPayload = "{\"temperature\": " + String(tempC) + "}";
   delay(10);
 
