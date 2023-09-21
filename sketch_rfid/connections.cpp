@@ -1,12 +1,14 @@
 #include "connections.h";
 
 //Parameters
-const char* ssid = "Wind3 HUB-D582F1";
-const char* password = "3djxzu3bal3d23ja";
+const char* ssid = "";        //insert your SSID
+const char* password = "$$";  //insert your password
+
 //Your Domain name with URL path or IP address with path
 String serverName = "https://4nsuna0nia.execute-api.eu-west-2.amazonaws.com/Prod";
 
 bool is_new_tag = false;
+bool data_acquisition = false;
 
 const String DEVICE_ID = "123";
 
@@ -48,6 +50,7 @@ volatile bool attributesChanged = false;
 
 // LED modes: 0 - continious state, 1 - blinking
 volatile int ledMode = 0;
+volatile int getDataAcquisition = 0;
 
 // Current led state
 volatile bool ledState = false;
@@ -117,12 +120,31 @@ RPC_Response processSetLedMode(const RPC_Data &data) {
   return RPC_Response("newMode", (int)ledMode);
 }
 
+RPC_Response processSetDataAcquisition (const RPC_Data &data) {
+  
+  int new_mode = data;
+
+  data_acquisition = !data_acquisition; 
+
+  if (new_mode != 0 && new_mode != 1) {
+    return RPC_Response("error", "Unknown mode!");
+  }
+
+  getDataAcquisition = new_mode;
+
+  //attributesChanged = true;
+
+  // Returning current mode
+  return RPC_Response("newMode", (int)getDataAcquisition);
+}
+
 
 // Optional, keep subscribed shared attributes empty instead,
 // and the callback will be called for every shared attribute changed on the device,
 // instead of only the one that were entered instead
-const std::array<RPC_Callback, 1U> callbacks = {
-  RPC_Callback{ "setLedMode", processSetLedMode }
+const std::array<RPC_Callback, 2U> callbacks = {
+  RPC_Callback{ "setLedMode", processSetLedMode },
+  RPC_Callback{ "setDataAcquisition", processSetDataAcquisition }
 };
 
 // for init camera
@@ -166,8 +188,10 @@ const Attribute_Request_Callback attribute_client_request_callback(CLIENT_ATTRIB
 void Photoresistor(String &_telemetryPayload)
 {
   int adcVal = analogRead(PIN_ANALOG_LUX); //read adc
-  //Serial.print(adcVal + " ");
-  _telemetryPayload = "{\"luminosity\": " + String(adcVal) + "}";
+  //Serial.print(adcVal);
+  randomSeed(analogRead(0));
+  int randomNumber = random(400, 501);
+  _telemetryPayload = "{\"luminosity\": " + String(randomNumber) + "}";
   delay(10);
 }
 
@@ -284,9 +308,12 @@ void connectToThingsBoard(String &_telemetryPayloadT, String &_telemetryPayloadP
     tb.sendAttributeString("bssid", WiFi.BSSIDstr().c_str());
     tb.sendAttributeString("localIp", WiFi.localIP().toString().c_str());
     tb.sendAttributeString("ssid", WiFi.SSID().c_str());
-    tb.sendTelemetryJson(_telemetryPayloadT.c_str());
-    tb.sendTelemetryJson(_telemetryPayloadP.c_str());
-    
+
+    if (data_acquisition){
+      tb.sendTelemetryJson(_telemetryPayloadT.c_str());
+      tb.sendTelemetryJson(_telemetryPayloadP.c_str());
+    }
+
   }
 
   tb.loop();
