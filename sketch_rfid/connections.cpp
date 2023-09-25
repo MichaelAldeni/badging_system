@@ -172,6 +172,7 @@ void processSharedAttributes(const Shared_Attribute_Data &data) {
   attributesChanged = true;
 }
 
+//change the LED operating mode based on requests sent by external clients.
 void processClientAttributes(const Shared_Attribute_Data &data) {
   for (auto it = data.begin(); it != data.end(); ++it) {
     if (strcmp(it->key().c_str(), LED_MODE_ATTR) == 0) {
@@ -181,6 +182,7 @@ void processClientAttributes(const Shared_Attribute_Data &data) {
   }
 }
 
+//these objects are used to separately handle requests for shared attributes and client attributes, each with its own associated management function
 const Shared_Attribute_Callback attributes_callback(SHARED_ATTRIBUTES_LIST.cbegin(), SHARED_ATTRIBUTES_LIST.cend(), &processSharedAttributes);
 const Attribute_Request_Callback attribute_shared_request_callback(SHARED_ATTRIBUTES_LIST.cbegin(), SHARED_ATTRIBUTES_LIST.cend(), &processSharedAttributes);
 const Attribute_Request_Callback attribute_client_request_callback(CLIENT_ATTRIBUTES_LIST.cbegin(), CLIENT_ATTRIBUTES_LIST.cend(), &processClientAttributes);
@@ -208,6 +210,7 @@ void Thermometer(String &_telemetryPayload)
 
 }
 
+//This function can be used to check whether a device with a specified I2C address is connected and responding correctly on the I2C bus
 bool i2CAddrTest(uint8_t addr) {
  Wire.begin();
  Wire.beginTransmission(addr);
@@ -217,6 +220,7 @@ bool i2CAddrTest(uint8_t addr) {
  return false;
 }
 
+//this function is designed to initialize an I2C LCD display, and if the primary device with address 0x27 is not present, it uses an alternative address 0x3F
 void initLCD()
 {
   Wire.begin(SDA, SCL); // attach the IIC pin
@@ -229,6 +233,8 @@ void initLCD()
  lcd.print("Ready to bedge!!"); // The print content is displayed on the LCD
 }
 
+//This feature manages communication between the device and the ThingsBoard server,
+//allowing the device to send telemetry data and receive RPC commands and shared and client attribute updates from the ThingsBoard server.
 void connectToThingsBoard(String &_telemetryPayloadT, String &_telemetryPayloadP){
   if (!tb.connected()) {
     subscribed = false;
@@ -320,6 +326,9 @@ void connectToThingsBoard(String &_telemetryPayloadT, String &_telemetryPayloadP
   
 }
 
+//This feature is used to connect to a specific Wi-Fi network using a provided network name and password. 
+//The feature waits until the Wi-Fi connection is established and then provides information about the successful connection,
+//including local IP address assignment.
 void initWiFi(){
   WiFi.begin(ssid, password);
   WiFi.SSID();
@@ -333,6 +342,8 @@ void initWiFi(){
   Serial.println(WiFi.localIP());
 }
 
+//This feature is used to send HTTP POST requests to an AWS server with specific data and manage the server's response, 
+//displaying appropriate messages on the LCD based on the response received.
 void sendToAws(String id){
 
     // Data to send with HTTP POST
