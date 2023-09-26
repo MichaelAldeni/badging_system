@@ -84,6 +84,9 @@ constexpr std::array<const char *, 1U> CLIENT_ATTRIBUTES_LIST = {
 /// See https://arduinojson.org/v5/api/jsonvariant/subscript/ for more details
 /// @param data Data containing the rpc data that was called and its current value
 /// @return Response that should be sent to the cloud. Useful for getMethods
+//This function receives an RPC request to set the mode of a LED,
+//checks whether the value recived is valid, updates the state variables, 
+//and returns an RPC response that includes the new value of the LED mode.
 RPC_Response processSetLedMode(const RPC_Data &data) {
   Serial.println("Received the set led state RPC method");
 
@@ -120,6 +123,9 @@ RPC_Response processSetLedMode(const RPC_Data &data) {
   return RPC_Response("newMode", (int)ledMode);
 }
 
+//this function receives an RPC request to set the data acquisition mode,
+//checks whether the value passed is valid, updates the state variables, 
+//and returns an RPC response that includes the new data acquisition mode value.
 RPC_Response processSetDataAcquisition (const RPC_Data &data) {
   
   int new_mode = data;
@@ -182,7 +188,8 @@ void processClientAttributes(const Shared_Attribute_Data &data) {
   }
 }
 
-//these objects are used to separately handle requests for shared attributes and client attributes, each with its own associated management function
+//these objects are used to separately handle requests for shared attributes and client attributes,
+//each with its own associated management function
 const Shared_Attribute_Callback attributes_callback(SHARED_ATTRIBUTES_LIST.cbegin(), SHARED_ATTRIBUTES_LIST.cend(), &processSharedAttributes);
 const Attribute_Request_Callback attribute_shared_request_callback(SHARED_ATTRIBUTES_LIST.cbegin(), SHARED_ATTRIBUTES_LIST.cend(), &processSharedAttributes);
 const Attribute_Request_Callback attribute_client_request_callback(CLIENT_ATTRIBUTES_LIST.cbegin(), CLIENT_ATTRIBUTES_LIST.cend(), &processClientAttributes);
@@ -220,7 +227,8 @@ bool i2CAddrTest(uint8_t addr) {
  return false;
 }
 
-//this function is designed to initialize an I2C LCD display, and if the primary device with address 0x27 is not present, it uses an alternative address 0x3F
+//this function is designed to initialize an I2C LCD display, and if the primary device with address 0x27 is not present,
+//it uses an alternative address 0x3F
 void initLCD()
 {
   Wire.begin(SDA, SCL); // attach the IIC pin
