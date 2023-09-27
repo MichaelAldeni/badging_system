@@ -145,9 +145,8 @@ RPC_Response processSetDataAcquisition (const RPC_Data &data) {
 }
 
 
-// Optional, keep subscribed shared attributes empty instead,
-// and the callback will be called for every shared attribute changed on the device,
-// instead of only the one that were entered instead
+//This structure can be used to handle RPC calls within your application. When a callback name is received,
+//the system can look for the corresponding associated function in the array.
 const std::array<RPC_Callback, 2U> callbacks = {
   RPC_Callback{ "setLedMode", processSetLedMode },
   RPC_Callback{ "setDataAcquisition", processSetDataAcquisition }
@@ -159,6 +158,8 @@ const std::array<RPC_Callback, 2U> callbacks = {
 /// @brief Update callback that will be called as soon as one of the provided shared attributes changes value,
 /// if none are provided we subscribe to any shared attribute change instead
 /// @param data Data containing the shared attributes that were changed and their current value
+//receives data about shared attributes, checks and processes the specific attributes, 
+//and updates the corresponding variables based on the new values.
 void processSharedAttributes(const Shared_Attribute_Data &data) {
   for (auto it = data.begin(); it != data.end(); ++it) {
     if (strcmp(it->key().c_str(), BLINKING_INTERVAL_ATTR) == 0) {
